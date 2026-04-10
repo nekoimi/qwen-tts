@@ -119,3 +119,5 @@ dmypy.json
 # TTS voice data (generated at runtime)
 data/voices/*.pkl
 data/voices/raw/
+
+models/Qwen3-TTS-12Hz-0.6B-Base
