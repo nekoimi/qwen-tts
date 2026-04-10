@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-最小 WebSocket 客户端：连接 ``/ws/tts``，发送 JSON，接收二进制 PCM（int16 LE），空帧表示结束。
+最小 WebSocket 客户端：连接 ``/ws/stream``，发送 JSON，接收二进制 PCM（int16 LE），空帧表示结束。
 
 依赖 ``websockets``，请使用::
 
@@ -62,7 +62,7 @@ async def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Minimal client for POST-less TTS over WebSocket.")
-    p.add_argument("--url", default="ws://127.0.0.1:8000/ws/tts", help="WebSocket URL")
+    p.add_argument("--url", default="ws://127.0.0.1:8000/ws/stream", help="WebSocket URL")
     p.add_argument("--voice-id", required=True, help="Registered voice_id")
     p.add_argument("--content", required=True, help="Text to synthesize")
     p.add_argument("--language", default="Auto", help='e.g. "Auto", "Chinese", "English"')

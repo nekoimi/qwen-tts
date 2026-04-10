@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["tts"])
 
 
-@router.websocket("/ws/tts")
+@router.websocket("/ws/stream")
 async def websocket_tts(websocket: WebSocket) -> None:
     await websocket.accept()
     try:

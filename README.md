@@ -73,7 +73,7 @@ curl -s -X POST "http://127.0.0.1:8000/add_voice_timbre" ^
 
 ### 2. WebSocket 合成
 
-连接：`WS /ws/tts`
+连接：`WS /ws/stream`
 
 客户端发送一条 JSON：
 
