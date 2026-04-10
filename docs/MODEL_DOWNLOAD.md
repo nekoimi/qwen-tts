@@ -58,6 +58,9 @@ export MODEL_ID="/path/to/qwentts/models/Qwen3-TTS-12Hz-0.6B-Base"
 ```bash
 git lfs install
 git clone https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base models/Qwen3-TTS-12Hz-0.6B-Base
+
+加速地址：
+git clone https://www.modelscope.cn/Qwen/Qwen3-TTS-12Hz-0.6B-Base.git models/Qwen3-TTS-12Hz-0.6B-Base
 ```
 
 克隆完成后，同样将 `MODEL_ID` 设为该目录的路径。
