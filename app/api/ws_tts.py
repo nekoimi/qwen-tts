@@ -1,4 +1,4 @@
-"""WebSocket API: stream synthesized speech as PCM chunks."""
+"""WebSocket API: stream synthesized speech as float32 LE sample chunks (WAV-style IEEE float)."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # QwenTTS
 
-基于 **FastAPI** 的 TTS 服务：HTTP 注册克隆音色，WebSocket 按音色流式下发 **PCM（int16 小端）** 分片；段结束以 **长度为 0 的二进制帧** 标记。
+基于 **FastAPI** 的 TTS 服务：HTTP 注册克隆音色，WebSocket 按音色流式下发 **单声道 float32 小端（f32le，与 WAV IEEE float 样本布局一致）** 分片；段结束以 **长度为 0 的二进制帧** 标记。
 
 - 模型：[Qwen3-TTS-12Hz-0.6B-Base](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base)（`qwen-tts`）
 - 包管理：**uv**；默认 PyPI 索引已在 [`pyproject.toml`](pyproject.toml) 中通过 `[[tool.uv.index]]` 配置为阿里云镜像。
@@ -36,7 +36,8 @@ uv sync --extra dev
 | `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `sdpa` |
 | `VOICE_DIR` | 音色 pkl 存储目录 | `data/voices` |
 | `TTS_MAX_CONCURRENT` | 并发推理上限 | `2` |
-| `CHUNK_MS` | WebSocket 每帧 PCM 时长（毫秒） | `32` |
+| `CHUNK_MS` | WebSocket 每帧音频时长（毫秒），按 f32le 分块 | `32` |
+| `TARGET_SAMPLE_RATE` | 参考音频重采样目标；**合成流**也输出为该采样率的 f32le | `24000` |
 | `MAX_UPLOAD_BYTES` | 上传参考音频最大字节 | `20971520` (20MB) |
 | `SAVE_RAW_UPLOADS` | 是否保存原始上传文件到 `data/voices/raw/` | `false` |
 | `HOST` / `PORT` | 仅文档说明；启动时用 uvicorn 参数 | `0.0.0.0` / `8000` |
@@ -87,7 +88,7 @@ curl -s -X POST "http://127.0.0.1:8000/add_voice_timbre" ^
 
 `language` 可省略，默认 `"Auto"`。
 
-服务端连续发送 **二进制** PCM 分片；**最后一帧为空 payload**（`len == 0`）表示本段语音结束。
+服务端连续发送 **二进制** 分片：每帧为 **单声道 float32 小端（f32le）原始样本字节**（与 WAV 中 IEEE float 样本布局一致，**不含** RIFF 头），每样本 4 字节；合成结果会先重采样到环境变量 **`TARGET_SAMPLE_RATE`（默认 24000）** 再输出，便于客户端固定采样率播放。**最后一帧为空 payload**（`len == 0`）表示本段语音结束。
 
 最小客户端脚本（需 **`uv sync --extra dev`** 安装 `websockets`）：
 
@@ -98,7 +99,7 @@ uv run python scripts/ws_tts_client.py ^
   --output-wav out.wav
 ```
 
-`--sample-rate` 默认 `24000`，应与模型实际输出采样率一致（若播放速度不对，可按服务端合成结果调整）。仅打印分片信息不写文件时，省略 `--output-wav` 即可。
+`--sample-rate` 默认 `24000`，须与服务的 **`TARGET_SAMPLE_RATE`** 一致。仅打印分片信息不写文件时，省略 `--output-wav` 即可。
 
 ## 项目结构
 

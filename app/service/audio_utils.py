@@ -25,6 +25,11 @@ def _resample(wav: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
     return signal.resample(wav, num).astype(np.float32)
 
 
+def resample_waveform(wav: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
+    """Resample mono float waveform (e.g. TTS output) to ``target_sr``."""
+    return _resample(np.asarray(wav, dtype=np.float32), orig_sr, target_sr)
+
+
 def load_audio_bytes(data: bytes, target_sr: int | None = None) -> Tuple[np.ndarray, int]:
     """Decode audio bytes to mono float32 waveform at ``target_sr`` (default from settings)."""
     sr = target_sr if target_sr is not None else settings.TARGET_SAMPLE_RATE
