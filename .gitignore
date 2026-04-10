@@ -115,3 +115,7 @@ dmypy.json
 .pyre/
 
 .idea
+
+# TTS voice data (generated at runtime)
+data/voices/*.pkl
+data/voices/raw/
