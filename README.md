@@ -4,6 +4,7 @@
 
 - 模型：[Qwen3-TTS-12Hz-0.6B-Base](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base)（`qwen-tts`）
 - 包管理：**uv**；默认 PyPI 索引已在 [`pyproject.toml`](pyproject.toml) 中通过 `[[tool.uv.index]]` 配置为阿里云镜像。
+- 模型体积较大、在线拉取慢时，请先阅读 **[手动下载模型说明](docs/MODEL_DOWNLOAD.md)**，将权重放到本机后设置环境变量 `MODEL_ID` 为本地目录。
 
 ## 环境要求
 
@@ -29,7 +30,7 @@ uv sync --extra dev
 
 | 变量 | 说明 | 默认 |
 |------|------|------|
-| `MODEL_ID` | Hugging Face 模型 id | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
+| `MODEL_ID` | Hugging Face 模型 id **或本机已下载目录的绝对/相对路径** | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
 | `DEVICE` | 设备，如 `cuda:0` 或 `cpu` | `cuda:0` |
 | `DTYPE` | `bfloat16` / `float16` / `float32` | `bfloat16` |
 | `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `sdpa` |
