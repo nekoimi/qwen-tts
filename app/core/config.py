@@ -28,7 +28,7 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 class Settings:
-    MODEL_ID: str = os.getenv("MODEL_ID", "Qwen/Qwen3-TTS-12Hz-0.6B-Base")
+    MODEL_ID: str = os.getenv("MODEL_ID", "models/Qwen3-TTS-12Hz-0.6B-Base")
     VOICE_DIR: Path = Path(os.getenv("VOICE_DIR", "data/voices"))
     TTS_MAX_CONCURRENT: int = _env_int("TTS_MAX_CONCURRENT", 2)
     DEVICE: str = os.getenv("DEVICE", "cuda:0")
