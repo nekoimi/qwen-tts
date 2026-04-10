@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -19,41 +20,45 @@ router = APIRouter(tags=["tts"])
 @router.websocket("/ws/stream")
 async def websocket_tts(websocket: WebSocket) -> None:
     await websocket.accept()
-    try:
-        data = await websocket.receive_json()
-    except WebSocketDisconnect:
-        return
+    while True:
+        try:
+            data = await websocket.receive_json()
+        except WebSocketDisconnect:
+            return
+        except json.JSONDecodeError:
+            await websocket.close(code=4400)
+            return
 
-    content = data.get("content")
-    voice_id = data.get("voice_id")
-    language = data.get("language", "Auto")
+        content = data.get("content")
+        voice_id = data.get("voice_id")
+        language = data.get("language", "Auto")
 
-    if not isinstance(content, str) or not content.strip():
-        await websocket.close(code=4400)
-        return
-    if not isinstance(voice_id, str) or not voice_id.strip():
-        await websocket.close(code=4400)
-        return
-    if not isinstance(language, str) or not language.strip():
-        language = "Auto"
+        if not isinstance(content, str) or not content.strip():
+            await websocket.close(code=4400)
+            return
+        if not isinstance(voice_id, str) or not voice_id.strip():
+            await websocket.close(code=4400)
+            return
+        if not isinstance(language, str) or not language.strip():
+            language = "Auto"
 
-    try:
-        prompt = load_voice_embedding(voice_id)
-    except FileNotFoundError:
-        await websocket.close(code=4404)
-        return
+        try:
+            prompt = load_voice_embedding(voice_id)
+        except FileNotFoundError:
+            await websocket.close(code=4404)
+            return
 
-    async def run_chunks():
-        def sync_list():
-            return list(stream_tts(content, prompt, language=language))
+        async def run_chunks():
+            def sync_list():
+                return list(stream_tts(content, prompt, language=language))
 
-        return await asyncio.to_thread(sync_list)
+            return await asyncio.to_thread(sync_list)
 
-    try:
-        chunks = await run_with_tts_limit(lambda: run_chunks())
-        for chunk in chunks:
-            await websocket.send_bytes(chunk)
-    except Exception:
-        logger.exception("websocket_tts failed voice_id=%s", voice_id)
-        await websocket.close(code=1011)
-        return
+        try:
+            chunks = await run_with_tts_limit(lambda: run_chunks())
+            for chunk in chunks:
+                await websocket.send_bytes(chunk)
+        except Exception:
+            logger.exception("websocket_tts failed voice_id=%s", voice_id)
+            await websocket.close(code=1011)
+            return
