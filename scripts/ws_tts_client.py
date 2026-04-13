@@ -9,6 +9,7 @@
 示例::
 
     uv run python scripts/ws_tts_client.py --voice-id my_voice_1 --content "你好" --output-wav out.wav
+    uv run python scripts/ws_tts_client.py --voice-id my_voice_1 --content-file "你好" --output-wav out.wav
 """
 
 from __future__ import annotations
@@ -24,8 +25,15 @@ from websockets.exceptions import ConnectionClosed
 
 
 async def run(args: argparse.Namespace) -> None:
+    content = args.content if args.content else ""
+    if not args.content and not args.content_file:
+        raise ValueError("Must specify content or content_file")
+    if args.content_file:
+        with open(args.content_file, "rb", encoding="UTF8") as f:
+            content = str(f.read()).replace("\r\n", "\n").replace("\n", "")
+
     payload = {
-        "content": args.content,
+        "content": content,
         "voice_id": args.voice_id,
         "language": args.language,
     }
@@ -63,7 +71,8 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Minimal client for TTS over WebSocket (f32le stream).")
     p.add_argument("--url", default="ws://127.0.0.1:8000/ws/stream", help="WebSocket URL")
     p.add_argument("--voice-id", required=True, help="Registered voice_id")
-    p.add_argument("--content", required=True, help="Text to synthesize")
+    p.add_argument("--content", required=False, help="Text to synthesize")
+    p.add_argument("--content-file", required=False, help="Text file")
     p.add_argument("--language", default="Auto", help='e.g. "Auto", "Chinese", "English"')
     p.add_argument(
         "--output-wav",
