@@ -29,7 +29,7 @@ async def run(args: argparse.Namespace) -> None:
     if not args.content and not args.content_file:
         raise ValueError("Must specify content or content_file")
     if args.content_file:
-        with open(args.content_file, "rb", encoding="UTF8") as f:
+        with open(args.content_file, "r", encoding="UTF-8") as f:
             content = str(f.read()).replace("\r\n", "\n").replace("\n", "")
 
     payload = {
