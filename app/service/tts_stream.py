@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any, Generator, Iterable
 
 import numpy as np
 
 from app.core.config import settings
+from app.core.logger import get_logger
 from app.core.model_manager import ModelManager
 from app.service.audio_utils import resample_waveform
+
+logger = get_logger(__name__)
 
 # Sentence-boundary pattern: Chinese/English punctuation + newlines
 _SENT_RE = re.compile(r"(?<=[。！？；\n.!?;])\s*")
@@ -98,6 +102,7 @@ def _synthesize_chunk(
     language: str,
 ) -> bytes:
     """Run generation for a single text chunk and return raw f32le PCM bytes (no terminator)."""
+    t0 = time.perf_counter()
     wavs, sr = model.generate_voice_clone(
         text=text,
         language=language,
@@ -105,12 +110,19 @@ def _synthesize_chunk(
         non_streaming_mode=False,
         max_new_tokens=_estimate_max_tokens(text),
     )
+    t1 = time.perf_counter()
     wav = np.asarray(wavs[0], dtype=np.float32)
     sr_i = int(sr)
     out_sr = settings.TARGET_SAMPLE_RATE
     if sr_i != out_sr:
         wav = resample_waveform(wav, sr_i, out_sr)
-    return _wav_to_f32le_bytes(wav)
+    pcm_bytes = _wav_to_f32le_bytes(wav)
+    t2 = time.perf_counter()
+    logger.info(
+        "TTS chunk | chars=%d | generate=%.2fs | postprocess=%.2fs | audio=%.2fs",
+        len(text), t1 - t0, t2 - t1, len(pcm_bytes) / (out_sr * 4),
+    )
+    return pcm_bytes
 
 
 def stream_tts(
@@ -126,12 +138,14 @@ def stream_tts(
     same encoding as WAV format IEEE float (payload only, no RIFF header). Output is resampled
     to ``TARGET_SAMPLE_RATE`` so clients can play at a fixed rate without pitch/speed mismatch.
     """
+    t_start = time.perf_counter()
     model = ModelManager.get_model()
     pcm_bytes = _synthesize_chunk(model, text, voice_prompt, language)
     for chunk in _iter_fixed_f32le_chunks(pcm_bytes, settings.TARGET_SAMPLE_RATE, settings.CHUNK_MS):
         if chunk:
             yield chunk
     yield b""
+    logger.info("TTS total | text_len=%d | elapsed=%.2fs", len(text), time.perf_counter() - t_start)
 
 
 def stream_tts_chunked(
@@ -146,6 +160,7 @@ def stream_tts_chunked(
 
    对外协议与 stream_tts() 完全一致：f32le PCM chunks + 空帧终止符。
     """
+    t_start = time.perf_counter()
     chunks = _split_sentences(text)
     if not chunks:
         yield b""
@@ -154,10 +169,14 @@ def stream_tts_chunked(
     model = ModelManager.get_model()
     out_sr = settings.TARGET_SAMPLE_RATE
 
-    for sentence in chunks:
+    for i, sentence in enumerate(chunks, 1):
         pcm_bytes = _synthesize_chunk(model, sentence, voice_prompt, language)
         for chunk in _iter_fixed_f32le_chunks(pcm_bytes, out_sr, settings.CHUNK_MS):
             if chunk:
                 yield chunk
 
     yield b""
+    logger.info(
+        "TTS total | text_len=%d | chunks=%d | elapsed=%.2fs",
+        len(text), len(chunks), time.perf_counter() - t_start,
+    )

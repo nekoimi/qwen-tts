@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+import time
 
 import torch
 
@@ -42,8 +43,9 @@ class ModelManager:
                         "dtype": _resolve_dtype(),
                         "attn_implementation": settings.ATTN_IMPLEMENTATION,
                     }
+                    t0 = time.perf_counter()
                     _model = Qwen3TTSModel.from_pretrained(settings.MODEL_ID, **kwargs)
-                    logger.info("Model loaded.")
+                    logger.info("Model loaded in %.2fs.", time.perf_counter() - t0)
 
                     cls._compile_model(_model)
                     cls._warmup_cuda(_model)
@@ -58,8 +60,9 @@ class ModelManager:
             return
         try:
             logger.info("Applying torch.compile to talker (mode=reduce-overhead) ...")
+            t0 = time.perf_counter()
             model.model.talker = torch.compile(talker, mode="reduce-overhead")
-            logger.info("torch.compile applied.")
+            logger.info("torch.compile applied in %.2fs.", time.perf_counter() - t0)
         except Exception:
             logger.warning("torch.compile failed, running without compilation", exc_info=True)
 
@@ -80,6 +83,7 @@ class ModelManager:
                 x_vector_only_mode=True,
                 icl_mode=False,
             )
+            t0 = time.perf_counter()
             model.generate_voice_clone(
                 text="Hi",
                 language="Auto",
@@ -87,6 +91,6 @@ class ModelManager:
                 max_new_tokens=20,
             )
             torch.cuda.synchronize()
-            logger.info("CUDA warmup complete.")
+            logger.info("CUDA warmup complete in %.2fs.", time.perf_counter() - t0)
         except Exception:
             logger.warning("CUDA warmup failed, skipping", exc_info=True)
