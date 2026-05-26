@@ -44,4 +44,49 @@ class ModelManager:
                     }
                     _model = Qwen3TTSModel.from_pretrained(settings.MODEL_ID, **kwargs)
                     logger.info("Model loaded.")
+
+                    cls._compile_model(_model)
+                    cls._warmup_cuda(_model)
         return _model
+
+    @classmethod
+    def _compile_model(cls, model: object) -> None:
+        if settings.DEVICE == "cpu":
+            return
+        talker = getattr(getattr(model, "model", None), "talker", None)
+        if talker is None:
+            return
+        try:
+            logger.info("Applying torch.compile to talker (mode=reduce-overhead) ...")
+            model.model.talker = torch.compile(talker, mode="reduce-overhead")
+            logger.info("torch.compile applied.")
+        except Exception:
+            logger.warning("torch.compile failed, running without compilation", exc_info=True)
+
+    @classmethod
+    def _warmup_cuda(cls, model: object) -> None:
+        if settings.DEVICE == "cpu":
+            return
+        try:
+            logger.info("Running CUDA warmup ...")
+            from qwen_tts import VoiceClonePromptItem
+
+            dummy_embedding = torch.zeros(
+                1024, device=settings.DEVICE, dtype=_resolve_dtype()
+            )
+            dummy_prompt = VoiceClonePromptItem(
+                ref_code=None,
+                ref_spk_embedding=dummy_embedding,
+                x_vector_only_mode=True,
+                icl_mode=False,
+            )
+            model.generate_voice_clone(
+                text="Hi",
+                language="Auto",
+                voice_clone_prompt=[dummy_prompt],
+                max_new_tokens=20,
+            )
+            torch.cuda.synchronize()
+            logger.info("CUDA warmup complete.")
+        except Exception:
+            logger.warning("CUDA warmup failed, skipping", exc_info=True)

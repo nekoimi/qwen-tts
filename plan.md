@@ -18,7 +18,10 @@
         └──────────────┬──────────────┘
                        ↓
                 TTS Worker Pool
-                (Qwen TTS Runtime)
+                (Qwen TTS Runtime + torch.compile)
+                       ↓
+                Sentence Chunking
+                (逐句生成 → 立即发送)
 ```
 
 ---
@@ -153,22 +156,23 @@ def load_voice_embedding(voice_id):
 ```python
 # app/service/tts_stream.py
 
-def stream_tts(text: str, voice_embedding):
+def stream_tts_chunked(text: str, voice_prompt, *, language="Auto"):
+    """分句流式生成：按句子分割文本，逐句合成并立即 yield 音频 chunks。"""
+    chunks = _split_sentences(text)
     model = ModelManager.get_model()
-
-    generator = model.stream_generate(
-        text=text,
-        speaker_embedding=voice_embedding
-    )
-
-    for chunk in generator:
-        yield chunk  # PCM / wav bytes
+    for sentence in chunks:
+        pcm_bytes = _synthesize_chunk(model, sentence, voice_prompt, language)
+        for chunk in _iter_fixed_f32le_chunks(pcm_bytes, ...):
+            yield chunk
+    yield b""  # 空帧终止符
 ```
 
 👉 关键点：
 
+* 分句流式：按句子边界分割，逐句生成并立即发送，大幅降低首包延迟
 * 必须是 generator
-* chunk粒度控制延迟
+* chunk粒度控制延迟（默认 32ms）
+* 动态 max_new_tokens：根据文本长度估算合理 token 上限
 
 ---
 
@@ -187,10 +191,19 @@ async def websocket_tts(ws: WebSocket):
     text = data["content"]
     voice_id = data["voice_id"]
 
-    embedding = load_voice_embedding(voice_id)
+    prompt = load_voice_embedding(voice_id)
 
-    for chunk in stream_tts(text, embedding):
-        await ws.send_bytes(chunk)
+    # 异步逐 chunk 流式发送（不阻塞事件循环）
+    async def stream_and_send():
+        loop = asyncio.get_running_loop()
+        gen = stream_tts_chunked(text, prompt, language=language)
+        while True:
+            chunk = await loop.run_in_executor(None, next, gen, _SENTINEL)
+            if chunk is _SENTINEL:
+                break
+            await ws.send_bytes(chunk)
+
+    await run_with_tts_limit(stream_and_send)
 ```
 
 ---
@@ -239,6 +252,17 @@ voice_cache = {}
 
 * 使用 binary（不要 base64）
 * 不要一次性返回 wav header
+* 异步逐 chunk 发送：`run_in_executor` 消费同步生成器，每得到一个 chunk 立即通过 WebSocket 发送，不阻塞事件循环
+
+---
+
+## 5️⃣ GPU加速优化
+
+* **Flash Attention 2**：默认启用（`ATTN_IMPLEMENTATION=flash_attention_2`），需在服务器安装 `uv pip install flash-attn --no-build-isolation`，可回退到 SDPA
+* **torch.compile**：模型加载后自动对 talker 应用 `torch.compile(mode="reduce-overhead")`，首次请求有编译开销
+* **CUDA 预热**：模型加载后自动执行短推理，触发 kernel 编译缓存
+* **soxr 重采样**：使用 `soxr.resample()` 替代 `scipy.signal.resample()`，重采样速度提升 3-10x
+* **动态 token 上限**：根据文本长度估算 `max_new_tokens`，避免短文本无效计算
 
 ---
 

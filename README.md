@@ -26,6 +26,14 @@ uv sync --extra dev
 
 **PyTorch**：`uv sync` 会安装与当前平台匹配的 `torch`。若阿里云镜像缺少所需 CUDA 版本轮子，可参考 [PyTorch 官网](https://pytorch.org/) 用官方 wheel 源单独安装 `torch` / `torchaudio` 后再执行 `uv sync --inexact` 或锁定版本。
 
+**Flash Attention 2（服务器部署推荐）**：默认注意力实现为 `flash_attention_2`，可显著加速推理。需在服务器上单独安装（不随 pyproject.toml 自动安装，避免影响本地开发环境）：
+
+```bash
+uv pip install flash-attn --no-build-isolation
+```
+
+若安装失败，可通过环境变量 `ATTN_IMPLEMENTATION=sdpa` 回退到 SDPA 注意力。
+
 ## 配置（环境变量）
 
 | 变量 | 说明 | 默认 |
@@ -33,13 +41,14 @@ uv sync --extra dev
 | `MODEL_ID` | Hugging Face 模型 id **或本机已下载目录的绝对/相对路径** | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
 | `DEVICE` | 设备，如 `cuda:0` 或 `cpu` | `cuda:0` |
 | `DTYPE` | `bfloat16` / `float16` / `float32` | `bfloat16` |
-| `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `sdpa` |
+| `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `flash_attention_2` |
 | `VOICE_DIR` | 音色 pkl 存储目录 | `data/voices` |
 | `TTS_MAX_CONCURRENT` | 并发推理上限 | `2` |
 | `CHUNK_MS` | WebSocket 每帧音频时长（毫秒），按 f32le 分块 | `32` |
 | `TARGET_SAMPLE_RATE` | 参考音频重采样目标；**合成流**也输出为该采样率的 f32le | `24000` |
 | `MAX_UPLOAD_BYTES` | 上传参考音频最大字节 | `20971520` (20MB) |
 | `SAVE_RAW_UPLOADS` | 是否保存原始上传文件到 `data/voices/raw/` | `false` |
+| `TTS_MAX_TOKEN_MULTIPLIER` | 动态 max_new_tokens 乘数（文本长度 × 系数 → token 上限） | `2.5` |
 | `HOST` / `PORT` | 仅文档说明；启动时用 uvicorn 参数 | `0.0.0.0` / `8000` |
 | `LOG_LEVEL` | 日志级别 | `INFO` |
 
@@ -104,6 +113,14 @@ uv run python scripts/ws_tts_client.py ^
 ## 项目结构
 
 与需求文档一致：`app/main.py` 入口，`app/api/` HTTP 与 WebSocket，`app/core/` 配置与模型单例，`app/service/` 音频与合成，`app/storage/` 音色持久化，`app/worker/` 并发封装。
+
+## 性能优化说明
+
+- **分句流式生成**：长文本按句子分段逐句合成，每句生成完毕立即通过 WebSocket 发送音频，大幅降低首包延迟。对外协议不变，客户端收到的仍是相同的 f32le PCM chunks + 空帧终止符。
+- **Flash Attention 2**：默认启用，需在服务器安装 flash-attn 包。
+- **torch.compile**：模型加载后自动对 talker（自回归解码器）应用 `torch.compile(mode="reduce-overhead")` 编译加速。首次请求有额外编译开销（约 30-60 秒），后续请求享受加速。
+- **CUDA 预热**：模型加载后自动执行一次短推理，触发 CUDA kernel 编译缓存，消除首次请求的冷启动延迟。
+- **动态 token 上限**：根据文本长度估算合理的 `max_new_tokens`，避免短文本生成过多无用 token。
 
 ## License
 

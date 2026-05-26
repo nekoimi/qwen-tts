@@ -7,7 +7,7 @@ from typing import Tuple
 
 import numpy as np
 import soundfile as sf
-from scipy import signal
+import soxr
 
 from app.core.config import settings
 
@@ -21,8 +21,7 @@ def _to_mono(wav: np.ndarray) -> np.ndarray:
 def _resample(wav: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
     if orig_sr == target_sr:
         return wav
-    num = int(len(wav) * target_sr / orig_sr)
-    return signal.resample(wav, num).astype(np.float32)
+    return soxr.resample(wav, orig_sr, target_sr).astype(np.float32)
 
 
 def resample_waveform(wav: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:

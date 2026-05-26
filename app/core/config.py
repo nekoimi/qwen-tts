@@ -33,13 +33,14 @@ class Settings:
     TTS_MAX_CONCURRENT: int = _env_int("TTS_MAX_CONCURRENT", 2)
     DEVICE: str = os.getenv("DEVICE", "cuda:0")
     DTYPE: str = os.getenv("DTYPE", "bfloat16")
-    ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "sdpa")
+    ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "flash_attention_2")
     CHUNK_MS: float = _env_float("CHUNK_MS", 32.0)
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = _env_int("PORT", 8000)
     MAX_UPLOAD_BYTES: int = _env_int("MAX_UPLOAD_BYTES", 20 * 1024 * 1024)
     TARGET_SAMPLE_RATE: int = _env_int("TARGET_SAMPLE_RATE", 24000)
     SAVE_RAW_UPLOADS: bool = _env_bool("SAVE_RAW_UPLOADS", False)
+    TTS_MAX_TOKEN_MULTIPLIER: float = _env_float("TTS_MAX_TOKEN_MULTIPLIER", 2.5)
 
 
 settings = Settings()
