@@ -32,7 +32,7 @@ class Settings:
     VOICE_DIR: Path = Path(os.getenv("VOICE_DIR", "data/voices"))
     TTS_MAX_CONCURRENT: int = _env_int("TTS_MAX_CONCURRENT", 2)
     DEVICE: str = os.getenv("DEVICE", "cuda:0")
-    DTYPE: str = os.getenv("DTYPE", "bfloat16")
+    DTYPE: str = os.getenv("DTYPE", "float16")
     ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "flash_attention_2")
     CHUNK_MS: float = _env_float("CHUNK_MS", 32.0)
     HOST: str = os.getenv("HOST", "0.0.0.0")
