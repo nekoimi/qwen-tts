@@ -35,7 +35,7 @@ class Settings:
     DTYPE: str = os.getenv("DTYPE", "float16")
     ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "flash_attention_2")
     ENABLE_TORCH_COMPILE: bool = _env_bool("ENABLE_TORCH_COMPILE", True)
-    ENABLE_CUDA_WARMUP: bool = _env_bool("ENABLE_CUDA_WARMUP", True)
+    ENABLE_CUDA_WARMUP: bool = _env_bool("ENABLE_CUDA_WARMUP", False)
     CHUNK_MS: float = _env_float("CHUNK_MS", 32.0)
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = _env_int("PORT", 8000)
