@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pickle
 import re
+import hashlib
 from pathlib import Path
 from threading import Lock
 from typing import Any
@@ -59,3 +60,12 @@ def has_voice(voice_id: str) -> bool:
         if voice_id in _VOICE_CACHE:
             return True
     return _path_for(voice_id).is_file()
+
+
+def voice_fingerprint(voice_id: str) -> str:
+    path = _path_for(voice_id)
+    if not path.is_file():
+        raise FileNotFoundError(f"Unknown voice_id: {voice_id}")
+    stat = path.stat()
+    raw = f"{voice_id}:{stat.st_size}:{stat.st_mtime_ns}".encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()

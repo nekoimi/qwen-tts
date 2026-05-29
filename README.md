@@ -37,6 +37,11 @@ uv sync --extra dev
 | `VOICE_DIR` | 音色 pkl 存储目录 | `data/voices` |
 | `TTS_MAX_CONCURRENT` | 并发推理上限 | `2` |
 | `CHUNK_MS` | WebSocket 每帧音频时长（毫秒），按 f32le 分块 | `32` |
+| `TTS_MIN_CHUNK_LEN` | 分句流式最小文本片段长度 | `10` |
+| `TTS_MAX_CHUNK_LEN` | 分句流式最大文本片段长度 | `80` |
+| `TTS_CACHE_DIR` | TTS f32le 文件缓存目录 | `data/tts_cache` |
+| `TTS_CACHE_MAX_BYTES` | TTS 缓存最大字节数，超过后按最近访问时间清理 | `107374182400` (100GB) |
+| `TTS_CACHE_VERSION` | 缓存版本；修改切分、音频格式或生成策略时可递增以整体失效 | `v1` |
 | `TARGET_SAMPLE_RATE` | 参考音频重采样目标；**合成流**也输出为该采样率的 f32le | `24000` |
 | `MAX_UPLOAD_BYTES` | 上传参考音频最大字节 | `20971520` (20MB) |
 | `SAVE_RAW_UPLOADS` | 是否保存原始上传文件到 `data/voices/raw/` | `false` |

@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import http_voice, ws_tts
+from app.core.config import settings
 from app.core.logger import setup_logging
 from app.storage.voice_store import ensure_voice_dir
 
@@ -16,6 +17,7 @@ from app.storage.voice_store import ensure_voice_dir
 async def lifespan(_: FastAPI):
     setup_logging()
     ensure_voice_dir()
+    settings.TTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
 

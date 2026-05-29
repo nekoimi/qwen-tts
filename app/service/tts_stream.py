@@ -12,6 +12,8 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.model_manager import ModelManager
 from app.service.audio_utils import resample_waveform
+from app.storage.tts_cache import cache_lock, make_cache_key, read_audio, write_audio
+from app.storage.voice_store import voice_fingerprint
 
 logger = get_logger(__name__)
 
@@ -110,6 +112,55 @@ def _synthesize_text(
     return pcm_bytes, out_sr
 
 
+def _synthesize_text_cached(
+    text: str,
+    voice_prompt: Any,
+    *,
+    voice_id: str,
+    language: str = "Auto",
+    chunk_index: int | None = None,
+    chunk_count: int | None = None,
+) -> tuple[bytes, int]:
+    out_sr = settings.TARGET_SAMPLE_RATE
+    key = make_cache_key(
+        voice_id=voice_id,
+        voice_fingerprint=voice_fingerprint(voice_id),
+        language=language,
+        text=text,
+        sample_rate=out_sr,
+    )
+
+    cached = read_audio(key)
+    if cached is not None:
+        return cached, out_sr
+
+    with cache_lock(key):
+        cached = read_audio(key)
+        if cached is not None:
+            return cached, out_sr
+
+        t0 = time.perf_counter()
+        pcm_bytes, out_sr = _synthesize_text(
+            text,
+            voice_prompt,
+            language=language,
+            chunk_index=chunk_index,
+            chunk_count=chunk_count,
+        )
+        generate_seconds = time.perf_counter() - t0
+        write_audio(
+            key,
+            pcm_bytes,
+            voice_id=voice_id,
+            language=language,
+            text=text,
+            sample_rate=out_sr,
+            audio_seconds=len(pcm_bytes) / (out_sr * 4),
+            generate_seconds=generate_seconds,
+        )
+        return pcm_bytes, out_sr
+
+
 def stream_tts(
     text: str,
     voice_prompt: Any,
@@ -137,6 +188,7 @@ def stream_tts_chunked(
     voice_prompt: Any,
     *,
     language: str = "Auto",
+    voice_id: str | None = None,
 ) -> Generator[bytes, None, None]:
     """
     Split longer text into sentence-sized TTS calls and yield each generated sentence immediately.
@@ -148,13 +200,23 @@ def stream_tts_chunked(
         return
 
     for index, chunk_text in enumerate(chunks, 1):
-        pcm_bytes, out_sr = _synthesize_text(
-            chunk_text,
-            voice_prompt,
-            language=language,
-            chunk_index=index,
-            chunk_count=len(chunks),
-        )
+        if voice_id is None:
+            pcm_bytes, out_sr = _synthesize_text(
+                chunk_text,
+                voice_prompt,
+                language=language,
+                chunk_index=index,
+                chunk_count=len(chunks),
+            )
+        else:
+            pcm_bytes, out_sr = _synthesize_text_cached(
+                chunk_text,
+                voice_prompt,
+                voice_id=voice_id,
+                language=language,
+                chunk_index=index,
+                chunk_count=len(chunks),
+            )
         for chunk in _iter_fixed_f32le_chunks(pcm_bytes, out_sr, settings.CHUNK_MS):
             if chunk:
                 yield chunk

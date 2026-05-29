@@ -53,7 +53,7 @@ async def websocket_tts(websocket: WebSocket) -> None:
         try:
             async def stream_and_send():
                 loop = asyncio.get_running_loop()
-                gen = stream_tts_chunked(content, prompt, language=language)
+                gen = stream_tts_chunked(content, prompt, language=language, voice_id=voice_id)
                 while True:
                     chunk = await loop.run_in_executor(None, next, gen, _SENTINEL)
                     if chunk is _SENTINEL:
