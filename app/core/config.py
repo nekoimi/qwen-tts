@@ -35,6 +35,8 @@ class Settings:
     DTYPE: str = os.getenv("DTYPE", "bfloat16")
     ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "sdpa")
     CHUNK_MS: float = _env_float("CHUNK_MS", 32.0)
+    TTS_MIN_CHUNK_LEN: int = _env_int("TTS_MIN_CHUNK_LEN", 10)
+    TTS_MAX_CHUNK_LEN: int = _env_int("TTS_MAX_CHUNK_LEN", 80)
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = _env_int("PORT", 8000)
     MAX_UPLOAD_BYTES: int = _env_int("MAX_UPLOAD_BYTES", 20 * 1024 * 1024)
