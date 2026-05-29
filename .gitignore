@@ -119,6 +119,7 @@ dmypy.json
 # TTS voice data (generated at runtime)
 data/voices/*.pkl
 data/voices/raw/
+data/tts_cache/
 *.wav
 *.txt
 
