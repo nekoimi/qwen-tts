@@ -38,9 +38,11 @@ class ModelManager:
                     from qwen_tts import Qwen3TTSModel
 
                     logger.info("Loading Qwen3 TTS model %s on %s", settings.MODEL_ID, settings.DEVICE)
+                    dtype = _resolve_dtype()
                     kwargs = {
                         "device_map": settings.DEVICE,
-                        "dtype": _resolve_dtype(),
+                        "dtype": dtype,
+                        "torch_dtype": dtype,
                         "attn_implementation": settings.ATTN_IMPLEMENTATION,
                     }
                     t0 = time.perf_counter()
@@ -53,7 +55,7 @@ class ModelManager:
 
     @classmethod
     def _compile_model(cls, model: object) -> None:
-        if settings.DEVICE == "cpu":
+        if settings.DEVICE == "cpu" or not settings.ENABLE_TORCH_COMPILE:
             return
         talker = getattr(getattr(model, "model", None), "talker", None)
         if talker is None:
@@ -68,7 +70,7 @@ class ModelManager:
 
     @classmethod
     def _warmup_cuda(cls, model: object) -> None:
-        if settings.DEVICE == "cpu":
+        if settings.DEVICE == "cpu" or not settings.ENABLE_CUDA_WARMUP:
             return
         try:
             logger.info("Running CUDA warmup ...")

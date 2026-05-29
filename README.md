@@ -40,8 +40,10 @@ uv pip install flash-attn --no-build-isolation
 |------|------|------|
 | `MODEL_ID` | Hugging Face 模型 id **或本机已下载目录的绝对/相对路径** | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
 | `DEVICE` | 设备，如 `cuda:0` 或 `cpu` | `cuda:0` |
-| `DTYPE` | `bfloat16` / `float16` / `float32` | `bfloat16` |
+| `DTYPE` | `bfloat16` / `float16` / `float32` | `float16` |
 | `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `flash_attention_2` |
+| `ENABLE_TORCH_COMPILE` | 是否对 talker 启用 `torch.compile` | `true` |
+| `ENABLE_CUDA_WARMUP` | 是否启动时执行一次 CUDA 生成预热；默认关闭以避免无效 dummy prompt 触发 CUDA assert | `false` |
 | `VOICE_DIR` | 音色 pkl 存储目录 | `data/voices` |
 | `TTS_MAX_CONCURRENT` | 并发推理上限 | `2` |
 | `CHUNK_MS` | WebSocket 每帧音频时长（毫秒），按 f32le 分块 | `32` |
