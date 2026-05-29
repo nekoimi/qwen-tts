@@ -40,7 +40,7 @@ uv pip install flash-attn --no-build-isolation
 |------|------|------|
 | `MODEL_ID` | Hugging Face 模型 id **或本机已下载目录的绝对/相对路径** | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
 | `DEVICE` | 设备，如 `cuda:0` 或 `cpu` | `cuda:0` |
-| `DTYPE` | `bfloat16` / `float16` / `float32` | `float16` |
+| `DTYPE` | `bfloat16` / `float16` / `float32` | `bfloat16` |
 | `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `sdpa` |
 | `ENABLE_TORCH_COMPILE` | 是否对 talker 启用 `torch.compile`；建议确认稳定后再打开 | `false` |
 | `ENABLE_CUDA_WARMUP` | 是否启动时执行一次 CUDA 生成预热；默认关闭以避免无效 dummy prompt 触发 CUDA assert | `false` |
@@ -70,6 +70,7 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - `voice_wav`：文件，`.wav` 或 `.mp3`
 - `voice_id`：字符串 ID（字母数字与 `_` `-`，最长 128）
+- `ref_text`：可选，参考音频对应文本。使用 Base 模型做克隆时建议提供，否则会退回仅 speaker embedding 的 x-vector-only 模式。
 
 成功返回 JSON：`true`。失败为 4xx/5xx（见响应体 `detail`）。
 
@@ -78,10 +79,11 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```bash
 curl -s -X POST "http://127.0.0.1:8000/add_voice_timbre" ^
   -F "voice_wav=@ref.wav" ^
-  -F "voice_id=my_voice_1"
+  -F "voice_id=my_voice_1" ^
+  -F "ref_text=这段参考音频里实际说的话"
 ```
 
-说明：当前实现使用 **x-vector-only** 克隆（无需参考文本），与仅提供音频文件的接口一致；若需更高还原度，可后续扩展可选字段 `ref_text` 走 ICL 模式。
+说明：提供 `ref_text` 时会使用 Base 模型推荐的 ICL 克隆路径；不提供时使用 **x-vector-only** 克隆（无需参考文本，但质量和稳定性可能较差）。
 
 ### 2. WebSocket 合成
 

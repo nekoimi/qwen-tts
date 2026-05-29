@@ -24,6 +24,7 @@ _ALLOWED_SUFFIX = {".wav", ".mp3"}
 async def add_voice_timbre(
     voice_wav: UploadFile = File(..., description="Reference audio (.wav / .mp3)"),
     voice_id: str = Form(..., description="Stable id for this voice"),
+    ref_text: str | None = Form(None, description="Transcript of the reference audio; recommended for Base voice clone."),
 ) -> bool:
     ensure_voice_dir()
     if not validate_voice_id(voice_id):
@@ -41,7 +42,10 @@ async def add_voice_timbre(
     try:
         wav, sr = load_audio_bytes(raw)
         ref = as_ref_audio_tuple(wav, sr)
-        prompt = create_prompt_from_ref_audio(ref, x_vector_only_mode=True)
+        prompt = create_prompt_from_ref_audio(
+            ref,
+            ref_text=ref_text.strip() if isinstance(ref_text, str) and ref_text.strip() else None,
+        )
         save_voice_embedding(voice_id, prompt)
     except Exception:
         logger.exception("add_voice_timbre failed for voice_id=%s", voice_id)

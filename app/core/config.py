@@ -32,7 +32,7 @@ class Settings:
     VOICE_DIR: Path = Path(os.getenv("VOICE_DIR", "data/voices"))
     TTS_MAX_CONCURRENT: int = _env_int("TTS_MAX_CONCURRENT", 2)
     DEVICE: str = os.getenv("DEVICE", "cuda:0")
-    DTYPE: str = os.getenv("DTYPE", "float16")
+    DTYPE: str = os.getenv("DTYPE", "bfloat16")
     ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "sdpa")
     ENABLE_TORCH_COMPILE: bool = _env_bool("ENABLE_TORCH_COMPILE", False)
     ENABLE_CUDA_WARMUP: bool = _env_bool("ENABLE_CUDA_WARMUP", False)
