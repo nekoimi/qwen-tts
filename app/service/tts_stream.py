@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Generator, Iterable
 
 import numpy as np
 
 from app.core.config import settings
+from app.core.logger import get_logger
 from app.core.model_manager import ModelManager
 from app.service.audio_utils import resample_waveform
+
+logger = get_logger(__name__)
 
 
 def _wav_to_f32le_bytes(wav: np.ndarray) -> bytes:
@@ -42,20 +46,33 @@ def stream_tts(
     same encoding as WAV format IEEE float (payload only, no RIFF header). Output is resampled
     to ``TARGET_SAMPLE_RATE`` so clients can play at a fixed rate without pitch/speed mismatch.
     """
+    t_start = time.perf_counter()
     model = ModelManager.get_model()
+    t_generate = time.perf_counter()
     wavs, sr = model.generate_voice_clone(
         text=text,
         language=language,
         voice_clone_prompt=voice_prompt,
         non_streaming_mode=False,
     )
+    t_after_generate = time.perf_counter()
     wav = np.asarray(wavs[0], dtype=np.float32)
     sr_i = int(sr)
     out_sr = settings.TARGET_SAMPLE_RATE
     if sr_i != out_sr:
         wav = resample_waveform(wav, sr_i, out_sr)
     pcm_bytes = _wav_to_f32le_bytes(wav)
+    t_after_postprocess = time.perf_counter()
+    logger.info(
+        "TTS generate done | chars=%d | model_wait=%.2fs | generate=%.2fs | postprocess=%.2fs | audio=%.2fs",
+        len(text),
+        t_generate - t_start,
+        t_after_generate - t_generate,
+        t_after_postprocess - t_after_generate,
+        len(pcm_bytes) / (out_sr * 4),
+    )
     for chunk in _iter_fixed_f32le_chunks(pcm_bytes, out_sr, settings.CHUNK_MS):
         if chunk:
             yield chunk
     yield b""
+    logger.info("TTS stream done | chars=%d | elapsed=%.2fs", len(text), time.perf_counter() - t_start)
