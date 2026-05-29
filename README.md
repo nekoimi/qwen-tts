@@ -106,6 +106,19 @@ uv run python scripts/ws_tts_client.py ^
 
 `--sample-rate` 默认 `24000`，须与服务的 **`TARGET_SAMPLE_RATE`** 一致。仅打印分片信息不写文件时，省略 `--output-wav` 即可。
 
+### 3. 预热 TTS 缓存
+
+将高频话术写入 UTF-8 文本文件（每行一句，空行和 `#` 开头的行会跳过），部署后可提前生成句子级缓存：
+
+```bash
+uv run python scripts/prewarm_tts_cache.py ^
+  --voice-id my_voice_1 ^
+  --text-file common_phrases.txt ^
+  --language Auto
+```
+
+同一批话术需要多个音色时，可重复传 `--voice-id`。脚本也支持 JSON 字符串数组作为 `--text-file`。
+
 ## 项目结构
 
 与需求文档一致：`app/main.py` 入口，`app/api/` HTTP 与 WebSocket，`app/core/` 配置与模型单例，`app/service/` 音频与合成，`app/storage/` 音色持久化，`app/worker/` 并发封装。
