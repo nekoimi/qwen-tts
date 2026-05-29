@@ -26,13 +26,13 @@ uv sync --extra dev
 
 **PyTorch**：`uv sync` 会安装与当前平台匹配的 `torch`。若阿里云镜像缺少所需 CUDA 版本轮子，可参考 [PyTorch 官网](https://pytorch.org/) 用官方 wheel 源单独安装 `torch` / `torchaudio` 后再执行 `uv sync --inexact` 或锁定版本。
 
-**Flash Attention 2（服务器部署推荐）**：默认注意力实现为 `flash_attention_2`，可显著加速推理。需在服务器上单独安装（不随 pyproject.toml 自动安装，避免影响本地开发环境）：
+**Flash Attention 2（可选加速）**：默认注意力实现为更稳妥的 `sdpa`。确认服务稳定后，可安装 Flash Attention 2 并通过 `ATTN_IMPLEMENTATION=flash_attention_2` 启用加速：
 
 ```bash
 uv pip install flash-attn --no-build-isolation
 ```
 
-若安装失败，可通过环境变量 `ATTN_IMPLEMENTATION=sdpa` 回退到 SDPA 注意力。
+若启用后出现 NaN、CUDA assert 或兼容性问题，可通过环境变量 `ATTN_IMPLEMENTATION=sdpa` 回退到 SDPA 注意力。
 
 ## 配置（环境变量）
 
@@ -41,8 +41,8 @@ uv pip install flash-attn --no-build-isolation
 | `MODEL_ID` | Hugging Face 模型 id **或本机已下载目录的绝对/相对路径** | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
 | `DEVICE` | 设备，如 `cuda:0` 或 `cpu` | `cuda:0` |
 | `DTYPE` | `bfloat16` / `float16` / `float32` | `float16` |
-| `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `flash_attention_2` |
-| `ENABLE_TORCH_COMPILE` | 是否对 talker 启用 `torch.compile` | `true` |
+| `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `sdpa` |
+| `ENABLE_TORCH_COMPILE` | 是否对 talker 启用 `torch.compile`；建议确认稳定后再打开 | `false` |
 | `ENABLE_CUDA_WARMUP` | 是否启动时执行一次 CUDA 生成预热；默认关闭以避免无效 dummy prompt 触发 CUDA assert | `false` |
 | `VOICE_DIR` | 音色 pkl 存储目录 | `data/voices` |
 | `TTS_MAX_CONCURRENT` | 并发推理上限 | `2` |

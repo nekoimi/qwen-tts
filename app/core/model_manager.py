@@ -42,7 +42,6 @@ class ModelManager:
                     kwargs = {
                         "device_map": settings.DEVICE,
                         "dtype": dtype,
-                        "torch_dtype": dtype,
                         "attn_implementation": settings.ATTN_IMPLEMENTATION,
                     }
                     t0 = time.perf_counter()
