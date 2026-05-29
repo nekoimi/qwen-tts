@@ -31,9 +31,11 @@ uv sync --extra dev
 | 变量 | 说明 | 默认 |
 |------|------|------|
 | `MODEL_ID` | Hugging Face 模型 id **或本机已下载目录的绝对/相对路径** | `Qwen/Qwen3-TTS-12Hz-0.6B-Base` |
+| `TTS_BACKEND` | 推理后端：`faster` 使用 `faster-qwen3-tts` CUDA Graph；`qwen` 使用原版 `qwen-tts` | `faster` |
 | `DEVICE` | 设备，如 `cuda:0` 或 `cpu` | `cuda:0` |
 | `DTYPE` | `bfloat16` / `float16` / `float32` | `bfloat16` |
 | `ATTN_IMPLEMENTATION` | 如 `sdpa`、`flash_attention_2` | `sdpa` |
+| `FASTER_MAX_SEQ_LEN` | `faster-qwen3-tts` 静态 KV cache 最大序列长度 | `2048` |
 | `VOICE_DIR` | 音色 pkl 存储目录 | `data/voices` |
 | `TTS_MAX_CONCURRENT` | 并发推理上限 | `2` |
 | `CHUNK_MS` | WebSocket 每帧音频时长（毫秒），按 f32le 分块 | `32` |

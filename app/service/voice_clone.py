@@ -18,7 +18,8 @@ def create_prompt_from_ref_audio(
     When ``x_vector_only_mode`` is True, ``ref_text`` is not required (lower quality than ICL).
     """
     model = ModelManager.get_model()
-    return model.create_voice_clone_prompt(
+    prompt_model = model if hasattr(model, "create_voice_clone_prompt") else model.model
+    return prompt_model.create_voice_clone_prompt(
         ref_audio=ref_audio,
         ref_text=None,
         x_vector_only_mode=x_vector_only_mode,

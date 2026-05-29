@@ -29,11 +29,13 @@ def _env_bool(name: str, default: bool) -> bool:
 
 class Settings:
     MODEL_ID: str = os.getenv("MODEL_ID", "models/Qwen3-TTS-12Hz-0.6B-Base")
+    TTS_BACKEND: str = os.getenv("TTS_BACKEND", "faster")
     VOICE_DIR: Path = Path(os.getenv("VOICE_DIR", "data/voices"))
     TTS_MAX_CONCURRENT: int = _env_int("TTS_MAX_CONCURRENT", 2)
     DEVICE: str = os.getenv("DEVICE", "cuda:0")
     DTYPE: str = os.getenv("DTYPE", "bfloat16")
     ATTN_IMPLEMENTATION: str = os.getenv("ATTN_IMPLEMENTATION", "sdpa")
+    FASTER_MAX_SEQ_LEN: int = _env_int("FASTER_MAX_SEQ_LEN", 2048)
     CHUNK_MS: float = _env_float("CHUNK_MS", 32.0)
     TTS_MIN_CHUNK_LEN: int = _env_int("TTS_MIN_CHUNK_LEN", 10)
     TTS_MAX_CHUNK_LEN: int = _env_int("TTS_MAX_CHUNK_LEN", 80)

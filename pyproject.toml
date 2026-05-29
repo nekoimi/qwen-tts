@@ -12,6 +12,7 @@ dependencies = [
     "scipy>=1.11.0",
     "soundfile>=0.12.1",
     "qwen-tts>=0.1.0",
+    "faster-qwen3-tts>=0.2.6",
     "torch",
     "torchvision",
     "torchaudio",
